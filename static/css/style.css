@@ -1,0 +1,18 @@
+body {
+    background-color: black;
+    font-family: arial;
+    color: white;
+}
+
+.valveLabel {
+    color:black;
+    font-weight:bold;
+    background-color:red;
+    padding:5px;
+    display:none;
+    position:relative;
+    top:-10px;
+    border:1px solid black;
+    border-radius:3px;
+    margin-left:2px;
+}
