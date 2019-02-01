@@ -7,7 +7,8 @@ var controller = {
     init: function(){
         model.init();
         viewer.init();
-        setInterval(model.updateData, 500);
+        //setInterval(model.updateData, 500);
+        setInterval(model.getLatestPoint, 500);
     }
 };
 
@@ -40,7 +41,7 @@ var viewer = {
             }
         });
         $("#buttonAddData").click(function(){
-            model.updateData();
+            model.updateData(Math.random()*20);
         });
     },
     chartRedraw: function(){
@@ -53,18 +54,28 @@ var model = {
         console.log("model: initializing");
         this.data = [12, 19, 3, 5, 2, 3];
         this.labels = [0, 1, 2, 3, 4, 5];
+        this.count = this.data.length;
     },
-    updateData: function(){
+    updateData: function(value){
         //console.log("model: should update data");
-        var numPoints = model.labels.length;
-        model.labels.push(numPoints);
-        model.data.push(Math.round(Math.random() * 20));
-        if(numPoints > 100){
+        model.labels.push(this.count++);
+        model.data.push(value);
+        if(model.data.length > 100){
             model.labels.shift();
             model.data.shift();
         }
         viewer.chartRedraw();
         
+    },
+    getLatestPoint: function(){
+        $.post(
+            '/action/getLatestPoint',
+            function(data){
+                console.log("Response: "+JSON.stringify(data));
+                model.updateData(data.value);
+            },
+            'json'
+        );
     }
 };
 
