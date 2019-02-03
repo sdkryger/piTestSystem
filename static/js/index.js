@@ -6,29 +6,35 @@ $(document).ready(function(){
 var controller = {
     init: function(){
         model.init();
-        viewer.init();
+        //viewer.init();
+        model.getChannels();
         //setInterval(model.updateData, 500);
-        setInterval(model.getLatestPoint, 500);
+        //setInterval(model.getLatestPoint, 500);
+    },
+    beginDataRequests: function(){
+        console.log("controller.beginDataRequests");
+        setInterval(model.getLatestPoint, 1000);
     }
 };
 
 var viewer = {
     init: function(){
         console.log("viewer: initializing");
-        this.ctx = $("#chart");
-        this.chart = new Chart(this.ctx, {
+        //this.ctx = $("#chart");
+        this.chart = {}; //chart object
+        
+        $("#buttonAddData").click(function(){
+            model.updateData(Math.random()*20);
+        });
+    },
+    initChart: function(){
+        
+        console.log("viewer.initChart says data: "+JSON.stringify(model.chartData));
+        var ctx = $("#chart");
+        
+        viewer.chart = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: model.labels,
-                datasets: [{
-                    label: 'Well 1 casing pressure',
-                    data: model.data,
-                    backgroundColor: '#4286f4',
-                    fill: false,
-                    lineTension: 0,
-                    borderColor: '#4286f4'
-                }]
-            },
+            data: model.chartData,
             options: {
                 scales: {
                     yAxes: [{
@@ -40,31 +46,55 @@ var viewer = {
                 responsive: true
             }
         });
-        $("#buttonAddData").click(function(){
-            model.updateData(Math.random()*20);
-        });
     },
-    chartRedraw: function(){
+    chartRender: function(){
+        //console.log(JSON.stringify(viewer.chart.data.datasets));
         this.chart.update();
+    },
+    channelsUpdate: function(channels){
+        console.log("viewer.channelsUpdate list of channels is: "+JSON.stringify(channels));
+        viewer.chart.data.datasets = [];
+        $.each(channels,function(index,value){
+            viewer.chart.data.datasets.push({label:value.name, data: model.data[index], backgroundColor: value.color, fill:false, lineTension:0, borderColor: value.color});
+        });
+        console.log("viewer: datasets are: "+JSON.stringify(viewer.chart.data));
     }
 };
 
 var model = {
     init: function(){
         console.log("model: initializing");
-        this.data = [12, 19, 3, 5, 2, 3];
-        this.labels = [0, 1, 2, 3, 4, 5];
+        this.data = [];
+        this.labels = ['0','1','2','3'];
         this.count = this.data.length;
+        this.firstData = true; //set to false after the first data is received
+        this.chartData = {
+            labels: [],
+            datasets: []
+        };
     },
-    updateData: function(value){
-        //console.log("model: should update data");
-        model.labels.push(this.count++);
-        model.data.push(value);
-        if(model.data.length > 100){
-            model.labels.shift();
-            model.data.shift();
+    updateData: function(values){
+        //console.log("model: should update data. values: "+JSON.stringify(values));
+        model.chartData.labels.push(this.count++);
+        $.each(values,function(index,value){
+            model.chartData.datasets[index].data.push(value);
+            if(model.count > 100){
+                model.chartData.datasets[index].data.shift();
+            }
+        });
+        if(model.count > 100){
+            model.chartData.labels.shift();
         }
-        viewer.chartRedraw();
+        //viewer.chartRedraw();
+        if(model.firstData){
+            //console.log("Should now initialize the chart");
+            viewer.initChart();
+            model.firstData = false;
+        }else{
+            viewer.chartRender();
+        }
+        //console.log("model.updateData says model.chart: "+JSON.stringify(model.chartData));
+        //console.log("model.firstData: "+model.firstData);
         
     },
     getLatestPoint: function(){
@@ -72,7 +102,24 @@ var model = {
             '/action/getLatestPoint',
             function(data){
                 console.log("Response: "+JSON.stringify(data));
-                model.updateData(data.value);
+                model.updateData(data.values);
+            },
+            'json'
+        );
+    },
+    getChannels: function() {
+        $.post(
+            '/action/getChannels',
+            function(data){
+                model.chartData.labels = [];
+                model.chartData.datasets = [];
+                model.count = 0;
+                $.each(data.channels,function(index,value){
+                    model.chartData.datasets.push({label:value.name, data: [], backgroundColor: value.color, borderColor: value.color, fill: false, lineTension: 0});
+                });
+                console.log("model.getChannels says data is: "+JSON.stringify(model.chartData));
+                
+                controller.beginDataRequests();
             },
             'json'
         );
