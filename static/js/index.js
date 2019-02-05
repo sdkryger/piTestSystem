@@ -1,4 +1,5 @@
 $(document).ready(function(){
+    console.log("Done...");
     $(".myButton").button();
     controller.init();
 });
@@ -6,7 +7,7 @@ $(document).ready(function(){
 var controller = {
     init: function(){
         model.init();
-        //viewer.init();
+        viewer.init();
         model.getChannels();
         //setInterval(model.updateData, 500);
         //setInterval(model.getLatestPoint, 500);
@@ -22,9 +23,22 @@ var viewer = {
         console.log("viewer: initializing");
         //this.ctx = $("#chart");
         this.chart = {}; //chart object
-        
-        $("#buttonAddData").click(function(){
-            model.updateData(Math.random()*20);
+        $("#imgMenu").click(function(){
+            console.log("Should open menu");
+            $("#dialogMenu").dialog('open');
+        });
+        $("#dialogMenu").dialog({
+            autoOpen: false,
+            position: {my: "right top", at: "right top", of: window}
+        });
+        $("#buttonSettings").click(function(){
+            $("#dialogMenu").dialog('close');
+            window.location.href = '/settings';
+        });
+        $(window).bind("pageshow", function(event) {
+            if (event.originalEvent.persisted) {
+                window.location.reload(); 
+            }
         });
     },
     initChart: function(){
@@ -77,9 +91,14 @@ var model = {
         //console.log("model: should update data. values: "+JSON.stringify(values));
         model.chartData.labels.push(this.count++);
         $.each(values,function(index,value){
-            model.chartData.datasets[index].data.push(value);
-            if(model.count > 100){
-                model.chartData.datasets[index].data.shift();
+            try{
+                model.chartData.datasets[index].data.push(value);
+                if(model.count > 100){
+                    model.chartData.datasets[index].data.shift();
+                }
+            }
+            catch(err){
+                window.location.reload();
             }
         });
         if(model.count > 100){
@@ -101,7 +120,7 @@ var model = {
         $.post(
             '/action/getLatestPoint',
             function(data){
-                console.log("Response: "+JSON.stringify(data));
+                //console.log("Response: "+JSON.stringify(data));
                 model.updateData(data.values);
             },
             'json'

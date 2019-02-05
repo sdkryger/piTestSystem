@@ -5,7 +5,7 @@ app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 count = 0
 
 class Channel:
-    def __init__(self, name, color, address, rawLow=0, rawHigh=10, scaledLow=0, scaledHigh=10):
+    def __init__(self, name, color, address, rawLow=0.0, rawHigh=10.0, scaledLow=0.0, scaledHigh=10.0):
         self.name = name
         self.color = color
         self.address = address
@@ -34,6 +34,10 @@ def index():
         return render_template('index.html')
     return redirect(url_for('splashScreen'))
     
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
+    
 @app.route("/splashScreen")
 def splashScreen():
     global count
@@ -52,6 +56,24 @@ def action(action):
         return jsonify(error=False,values=values)
     elif(action == 'getChannels'):
         return jsonify(channels = [ch.serialize() for ch in channels])
+    elif(action == 'updateInputChannel'):
+        index = int(request.form['index'])
+        channels[index].name = request.form['name']
+        channels[index].address = request.form['address']
+        channels[index].color = request.form['color']
+        channels[index].rawLow = float(request.form['rawLow'])
+        channels[index].scaledLow = float(request.form['scaledLow'])
+        channels[index].rawHigh = float(request.form['rawHigh'])
+        channels[index].scaledHigh = float(request.form['scaledHigh'])
+        return jsonify(error=False,channel=channels[index].serialize())
+    elif(action == 'addInputChannel'):
+        channel = Channel(request.form['name'],request.form['color'],request.form['address'],float(request.form['rawLow']),float(request.form['rawHigh']),float(request.form['scaledLow']),float(request.form['scaledHigh']))
+        channels.append(channel)
+        return jsonify(error=False,channel=channel.serialize())
+    elif(action == 'deleteChannel'):
+        index = int(request.form['index'])
+        del channels[index]
+        return jsonify(error=False)
     else:
         return jsonify(error=True,message="Action "+action+" not recognized")
     
