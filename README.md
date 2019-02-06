@@ -9,7 +9,7 @@ This system provides a user interface via a web server. The intention is to have
 - Splash screen with 3D rotating logo - Complete
 - Graph updated via AJAX - Complete
 - Settings page to add/update/delete channels - Complete
-- Separate thread to interface with hardware inputs/outputs
+- Separate thread to interface with hardware inputs/outputs - Complete
 - File logging
 - Download of log files
 - Display of log file
