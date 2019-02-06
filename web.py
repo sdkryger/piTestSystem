@@ -1,10 +1,14 @@
 from flask import Flask, session, redirect, url_for, render_template, request, jsonify
 import random
+import time
+import json
+from threading import Thread, Lock
+
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 count = 0
 
-class Channel:
+class Channel: #analog channel objects
     def __init__(self, name, color, address, rawLow=0.0, rawHigh=10.0, scaledLow=0.0, scaledHigh=10.0):
         self.name = name
         self.color = color
@@ -24,7 +28,19 @@ class Channel:
             'scaledHigh':self.scaledHigh
         }
 
-channels = [Channel('Inner temperature','#ff0000',1234),Channel('Outer temperature','#00ff00',1235)]
+        
+def scaleValue(rawValue, channel):
+    m = (channel.scaledHigh - channel.scaledLow) / (channel.rawHigh - channel.rawLow)
+    b = channel.scaledLow - m * channel.rawLow
+    return m * rawValue + b
+
+channels = [Channel('Inner temperature','#ff0000',1234),Channel('Outer temperature','#00ff00',1235)] #staring list of channels
+latestValues = [] #list of the most recent values from the input cards
+lock = Lock()
+
+
+for ch in channels: #initialize the latestValues list
+    latestValues.append(0.0)
 
 @app.route("/")
 def index():
@@ -48,12 +64,9 @@ def splashScreen():
     
 @app.route("/action/<action>", methods = ['GET','POST'])
 def action(action):
-    global channels
+    global channels, latestValues
     if(action == 'getLatestPoint'):
-        values = []
-        for ch in channels:
-            values.append(random.randint(1,20))
-        return jsonify(error=False,values=values)
+        return jsonify(error=False, values=latestValues)
     elif(action == 'getChannels'):
         return jsonify(channels = [ch.serialize() for ch in channels])
     elif(action == 'updateInputChannel'):
@@ -68,17 +81,42 @@ def action(action):
         return jsonify(error=False,channel=channels[index].serialize())
     elif(action == 'addInputChannel'):
         channel = Channel(request.form['name'],request.form['color'],request.form['address'],float(request.form['rawLow']),float(request.form['rawHigh']),float(request.form['scaledLow']),float(request.form['scaledHigh']))
-        channels.append(channel)
+        with lock:
+            channels.append(channel)
+            latestValues.append(0.0)
         return jsonify(error=False,channel=channel.serialize())
     elif(action == 'deleteChannel'):
         index = int(request.form['index'])
-        del channels[index]
+        with lock:
+            del channels[index]
+            del latestValues[index]
         return jsonify(error=False)
     else:
         return jsonify(error=True,message="Action "+action+" not recognized")
     
-    
+
+def io(): #thread reading from the hardware inputs and outputs... Simulated values at this point...
+    global channels, latestValues
+    while True:
+        x = 0
+        with lock:
+            try:
+                for ch in channels:
+                    latestValues[x] = scaleValue(random.randint(0,10),ch)
+                    x += 1
+                #print json.dumps(latestValues)
+            except:
+                print("Error writing to latestValues")
+        time.sleep(0.5)
+        
+        
+t = Thread(target=io)
+t.start()
+
+
+  
 if __name__ == '__main__':
     app.debug = True
     app.run(host='0.0.0.0', port=5000)
+
     
