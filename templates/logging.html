@@ -6,28 +6,28 @@
         <meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <title>
-            piTestSystem
+            Logging - piTestSystem
         </title>
         <link rel="stylesheet" type="text/css" href="static/css/style.css">
         <link href="static/css/jquery-ui.css" rel="stylesheet">
         <style>
             body { margin: 0; color:black;background-color:white;}
+            .myButtons {width: 250px;margin:2px;}
+            
         </style>
     </head>
     <body>
-        <img src="static/images/menu.png" id="imgMenu" style="float:right;margin-top:3px;margin-right:3px;">
-        <div class="chart-container" style="position: relative; width:95vw;">
-            <canvas id="chart"></canvas>
+        Filename: <input type="text" id="inputFilename" placeholder="Enter filename">
+        <button class="myButton" id="buttonStartLogging">Start Logging</button>
+        <button class="myButton" id="buttonStopLogging">Stop Logging</button>
+        <hr>
+        Existing log files
+        <div id="divFileList">
+        
         </div>
-        <div id="dialogMenu" style="display:none;">
-            <button class="myButton" id="buttonSettings">Settings</button>
-            <br>
-            <a href='/logging'><button class="myButton">Logging</button></a>
-        </div>
-        <script src="static/js/Chart.js" charset="utf-8"></script>
         <script src="static/js/jquery-3.3.1.min.js" charset="utf-8"></script>
         <script src="static/js/jquery-ui.min.js" charset="utf-8"></script>
         <script src="static/js/jquery.ui.touch-punch.min.js"></script>
-        <script src="static/js/index.js" charset="utf-8"></script>
+        <script src="static/js/logging.js" charset="utf-8"></script>
     </body>
 </html>
