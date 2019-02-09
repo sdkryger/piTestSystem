@@ -1,6 +1,8 @@
 # piTestSystem
 Raspberry Pi based data logging and test rig control with interface via web browser. 
 
+Demostration (without file logging) is located at http://35.182.187.87/
+
 # System overview
 This system provides a user interface via a web server. The intention is to have the Raspberry Pi talk to a separate PLC via Modbus Ethernet to allow for 'industrial' input/output.
 
