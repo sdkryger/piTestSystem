@@ -52,6 +52,7 @@ channels = [Channel('Inner temperature','#ff0000',1234),Channel('Outer temperatu
 latestValues = [] #list of the most recent values from the input cards
 lock = Lock()
 path = '/vagrant/www/data'
+filename = '' #current filename
 
 
 for ch in channels: #initialize the latestValues list
@@ -79,9 +80,9 @@ def splashScreen():
     
 @app.route("/action/<action>", methods = ['GET','POST'])
 def action(action):
-    global channels, latestValues, q
-    if(action == 'getLatestPoint'):
-        return jsonify(error=False, values=latestValues)
+    global channels, latestValues, q, filename
+    if(action == 'getLatest'):
+        return jsonify(error=False, values=latestValues, filename = filename)
     elif(action == 'getChannels'):
         return jsonify(channels = [ch.serialize() for ch in channels])
     elif(action == 'updateInputChannel'):
@@ -108,9 +109,12 @@ def action(action):
         return jsonify(error=False)
     elif(action == 'getFileList'):
         return jsonify(files=os.listdir(path))
-    elif(action == 'startLogging'):
+    elif(action == 'startLogging'): #TODO - check to see if the file already exists
         filename = request.form['filename'] + '.csv'
         print "should start logging with filename: "+filename
+        existingFiles = os.listdir(path)
+        if filename in existingFiles:
+            return jsonify(error=True, message="File already exists. Choose another filename.")
         q.put(Instruction('openFile',filename))
         return jsonify(error=False)
     elif(action == 'stopLogging'):
@@ -146,29 +150,43 @@ t.start()
 
 
 
-def fileModule():
-    global q, channels, path
+def fileModule(): #TODO - add time column (elapsed time in seconds?)
+    global q, channels, path, filename
     f = None #file reference
+    startTime = None #time file was created
+    firstDataWrite = True #want to set start time with first data write
     while True:
         i = q.get()
         if(i.header == 'writeData'):
             if f is not None:
                 print "The file appears to be open so we'll try to write to it, "+json.dumps(i.body)
-                contents = ''
+                if firstDataWrite:
+                    firstDataWrite = False
+                    contents = '0,'
+                    startTime = time.time()
+                else:
+                    contents = "{:0.2f}".format(time.time() - startTime)+','
                 for value in i.body:
                     contents += str(value) + ','
                 contents += '\n'
                 print "contents: "+contents
                 f.write(contents)
-        elif (i.header == 'openFile'):
+        elif (i.header == 'openFile'): #TODO - add column headers when opening a new file
             filePath = path+'/'+i.body
             print "Will open filename: "+filePath
-            
+            filename = i.body
             f = open(filePath,"w+")
+            header = 'Time(s),'
+            for ch in channels:
+                header += ch.name + ','
+            header += '\n'
+            f.write(header)
+            firstDataWrite = True #reset firstDataWrite
         elif (i.header == 'closeFile'):
             print "Will close file"
             f.close()
             f = None
+            filename = ''
             
         else:
             print "fileModule: unrecognized header..."+json.dumps(i.serialize())

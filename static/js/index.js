@@ -14,7 +14,7 @@ var controller = {
     },
     beginDataRequests: function(){
         console.log("controller.beginDataRequests");
-        setInterval(model.getLatestPoint, 1000);
+        setInterval(model.getLatest, 1000);
     }
 };
 
@@ -72,6 +72,16 @@ var viewer = {
             viewer.chart.data.datasets.push({label:value.name, data: model.data[index], backgroundColor: value.color, fill:false, lineTension:0, borderColor: value.color});
         });
         console.log("viewer: datasets are: "+JSON.stringify(viewer.chart.data));
+    },
+    updateFilename: function(filename){
+        console.log("viewer.updateFilename says the new filename is: "+filename);
+        var html="Currently not logging to file";
+        var bg = "#ff0000";
+        if(filename.length > 0){
+            html="Logging ("+filename+")";
+            bg = "#42f468";
+        }
+        $("#spanLoggingStatus").html(html).css('background-color',bg);
     }
 };
 
@@ -79,6 +89,7 @@ var model = {
     init: function(){
         console.log("model: initializing");
         this.data = [];
+        this.filename = null; // current filename
         this.labels = ['0','1','2','3'];
         this.count = this.data.length;
         this.firstData = true; //set to false after the first data is received
@@ -116,12 +127,16 @@ var model = {
         //console.log("model.firstData: "+model.firstData);
         
     },
-    getLatestPoint: function(){
+    getLatest: function(){
         $.post(
-            '/action/getLatestPoint',
+            '/action/getLatest',
             function(data){
                 //console.log("Response: "+JSON.stringify(data));
                 model.updateData(data.values);
+                if(data.filename != model.filename){
+                    viewer.updateFilename(data.filename);
+                    model.filename = data.filename;
+                }
             },
             'json'
         );
